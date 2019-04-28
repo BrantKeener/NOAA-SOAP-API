@@ -3,6 +3,9 @@ const router = express.Router();
 const xmlToJSON = require('../../xmlToJSON');
 const axios = require('axios');
 
+const latitude = 39.74;
+const longitude = -104.84;
+const startDate = 2019-04-28;
 const numDays = 4;
 const units = 'e';
 
@@ -11,9 +14,9 @@ const xmlData =
   `<Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
   <Body>
       <NDFDgenByDay xmlns="https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl">
-          <latitude>39.742902</latitude>
-          <longitude>-104.841890</longitude>
-          <startDate>2019-04-28</startDate>
+          <latitude>${latitude}</latitude>
+          <longitude>${longitude}</longitude>
+          <startDate>${startDate}</startDate>
           <numDays>${numDays}</numDays>
           <Unit>${units}</Unit>
           <format>12 hourly</format>
