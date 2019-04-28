@@ -4,6 +4,7 @@ const axios = require('axios');
 const soap = require('soap');
 const xmlparser = require('express-xml-bodyparser');
 
+const numDays = 4;
 const PORT = process.env.PORT || 8081;
 const soapURL = 'https://graphical.weather.gov/xml/SOAP_server/ndfdXMLserver.php';
 const xmlData = 
@@ -13,7 +14,7 @@ const xmlData =
           <latitude>39.742902</latitude>
           <longitude>-104.841890</longitude>
           <startDate>2019-04-28</startDate>
-          <numDays>4</numDays>
+          <numDays>${numDays}</numDays>
           <Unit>e</Unit>
           <format>12 hourly</format>
       </NDFDgenByDay>
@@ -29,8 +30,7 @@ app.use(xmlparser());
 // Right now I have location and time in rough formats
 // We need temp max, temp min, and precipitation chance
 const xmlToJSON = (xml) => {
-  // console.log(xml);
-  const initialValues = [4, 21]
+
   const regExOpen = /<[a-z]+>/g;
   const regExClose = /<\/[a-z]+>/g;
   const regExWhite = /\s\s/g;
@@ -45,37 +45,47 @@ const xmlToJSON = (xml) => {
   const dateArray = [];
   const tempMaxCat = xmlData2.split('<temperature type="maximum"')[1].split('</temperature>')[0];
   const tempMaxArray = tempMaxCat.split('</name>')[1].replace(regExOpen, '').replace(regExClose, '').split(/\n/g);
-  const tempMaxArrayNoWhite = [];
-  const tempMaxLabel = tempMaxCat.split('<name>')[1].split('</name>')[0];
+  const tempMaxArrayClean = [];
   const tempMinCat = xmlData2.split('<temperature type="minimum"')[1].split('</temperature>')[0];
-  const tempMinArray = tempMinCat.split('</name>')[1].split(/\n/g);
-  const tempMinLabel = tempMinCat.split('<name>')[1].split('</name>')[0];
+  const tempMinArray = tempMinCat.split('</name>')[1].replace(regExOpen, '').replace(regExClose, '').split(/\n/g);
+  const tempMinArrayClean = [];
   const precipCat = xmlData2.split('<probability-of-precipitation')[1].split('</probability-of-precipitation>')[0];
   const precipArray = precipCat.split('</name>')[1].split(/\n/g);
-  const precipLabel = precipCat.split('<name>')[1].split('</name>')[0];
   const weatherCat = xmlData2.split('<weather time-layout')[1];
   const weatherArray1 = weatherCat.split('</name>')[1].split('</weather>')[0];
   const weatherArray2 = weatherArray1.split(/\n/g);
   const weatherArray3 = [];
-  const weatherLabel = weatherCat.split('<name>')[1].split('</name>')[0];
+  // This variable is used to allow us to iterate through the dateArray if our for loop is doing something other than ++
+  let dateArrayX = 0;
+
   tempMaxArray.forEach(temp => {
     const tempNoWhite = parseInt(temp);
     if(!isNaN(tempNoWhite)) {
-      tempMaxArrayNoWhite.push(tempNoWhite);
+      tempMaxArrayClean.push(tempNoWhite);
     };
   });
+  tempMinArray.forEach(temp => {
+    const tempNoWhite = parseInt(temp);
+    if(!isNaN(tempNoWhite)) {
+      tempMinArrayClean.push(tempNoWhite);
+    };
+  });
+
   for(let i = 1; i < xmlTime.length - 1; i += 2) {
     const date = xmlTime[i].split('>')[1].split('T')[0];
     const day = xmlTime[i].split('<start-valid-time period-name="')[1].split('>')[0].replace('"', '');
     const dateBuild = {
-      [date]: {
-        day,
-        maxTemp: tempMaxArray[i - 1],
-        minTemp: tempMinArray[i - 1]
-      }
+      date,
+      day,
     };
     dateArray.push(dateBuild);
   };
+
+  tempMaxArrayClean.forEach((temp, index) => {
+    dateArray[index].maxTemp = temp;
+    dateArray[index].minTemp = tempMinArrayClean[index];
+  });
+
   weatherArray2.forEach(condition => {
     const noWhite = condition.replace(regExWhite, '');
     if(noWhite.charAt(1) === 'w') {
@@ -85,6 +95,23 @@ const xmlToJSON = (xml) => {
       };
     };
   });
+
+  const weatherOrPrecipAdd = (array, type) => {
+    for(let i = 0; i < array.length; i += 2) {
+      const am = array[i];
+      const pm = array[i + 1];
+      dateArray[dateArrayX][type] = { am, pm };
+      dateArrayX++;
+    };
+  };
+
+  if(weatherArray3.length === numDays * 2) {
+    weatherOrPrecipAdd(weatherArray3, 'weather');
+  } else {
+    weatherArray3.unshift("You've already experienced this weather.");
+    weatherOrPrecipAdd(weatherArray3, 'weather');
+  };
+  
   const json = {
     head: {
       title
@@ -94,20 +121,24 @@ const xmlToJSON = (xml) => {
         latitude,
         longitude
       },
-      time: {
+      dateWeather: {
         dateArray
       }
     }
   };
-  // console.log(xmlTime);
+  console.log(parseInt(precipArray));
   // console.log(weatherArray1);
-  // console.log(weatherArray2);
-  console.log(tempMaxArrayNoWhite);
+  // console.log(weatherArray3);
+  // console.log(json.data.time);
+  // for(let i = 0; i < dateArray.length; i++) {
+  //   console.log(json.data.dateWeather.dateArray[i]);
+  // }
   // console.log(weatherLabel, weatherArray2);
 };
 
 // Make an XML request to NOAA
 app.get('/', (req, res) => {
+
   axios.post(soapURL, xmlData,
     { headers: 
       { 'Content-Type': 'text/xml' } 
