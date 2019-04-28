@@ -12,7 +12,7 @@ const xmlData =
       <NDFDgenByDay xmlns="https://graphical.weather.gov/xml/DWMLgen/wsdl/ndfdXML.wsdl">
           <latitude>39.742902</latitude>
           <longitude>-104.841890</longitude>
-          <startDate>2019-04-27</startDate>
+          <startDate>2019-04-28</startDate>
           <numDays>4</numDays>
           <Unit>e</Unit>
           <format>12 hourly</format>
@@ -44,7 +44,8 @@ const xmlToJSON = (xml) => {
   const xmlTime = xmlData2.split('</layout-key>')[1].split('</time-layout>')[0].split(/\n/g);
   const dateArray = [];
   const tempMaxCat = xmlData2.split('<temperature type="maximum"')[1].split('</temperature>')[0];
-  const tempMaxArray = tempMaxCat.split('</name>')[1].split(/\n/g);
+  const tempMaxArray = tempMaxCat.split('</name>')[1].replace(regExOpen, '').replace(regExClose, '').split(/\n/g);
+  const tempMaxArrayNoWhite = [];
   const tempMaxLabel = tempMaxCat.split('<name>')[1].split('</name>')[0];
   const tempMinCat = xmlData2.split('<temperature type="minimum"')[1].split('</temperature>')[0];
   const tempMinArray = tempMinCat.split('</name>')[1].split(/\n/g);
@@ -57,12 +58,20 @@ const xmlToJSON = (xml) => {
   const weatherArray2 = weatherArray1.split(/\n/g);
   const weatherArray3 = [];
   const weatherLabel = weatherCat.split('<name>')[1].split('</name>')[0];
+  tempMaxArray.forEach(temp => {
+    const tempNoWhite = parseInt(temp);
+    if(!isNaN(tempNoWhite)) {
+      tempMaxArrayNoWhite.push(tempNoWhite);
+    };
+  });
   for(let i = 1; i < xmlTime.length - 1; i += 2) {
     const date = xmlTime[i].split('>')[1].split('T')[0];
     const day = xmlTime[i].split('<start-valid-time period-name="')[1].split('>')[0].replace('"', '');
     const dateBuild = {
       [date]: {
-        day
+        day,
+        maxTemp: tempMaxArray[i - 1],
+        minTemp: tempMinArray[i - 1]
       }
     };
     dateArray.push(dateBuild);
@@ -71,7 +80,9 @@ const xmlToJSON = (xml) => {
     const noWhite = condition.replace(regExWhite, '');
     if(noWhite.charAt(1) === 'w') {
       const valueOnly = noWhite.split('"')[1].split('"')[0];
-      weatherArray3.push(valueOnly);
+      if(valueOnly !== 'true') {
+        weatherArray3.push(valueOnly);
+      };
     };
   });
   const json = {
@@ -89,7 +100,9 @@ const xmlToJSON = (xml) => {
     }
   };
   // console.log(xmlTime);
-  console.log(weatherArray3);
+  // console.log(weatherArray1);
+  // console.log(weatherArray2);
+  console.log(tempMaxArrayNoWhite);
   // console.log(weatherLabel, weatherArray2);
 };
 
