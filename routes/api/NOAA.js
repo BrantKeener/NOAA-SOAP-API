@@ -24,8 +24,6 @@ const xmlData =
   </Body>
   </Envelope>`;
 
-
-
 // Make an XML request to NOAA
 router.get('/', (req, res) => {
 
