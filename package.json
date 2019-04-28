@@ -1,0 +1,23 @@
+{
+  "name": "NOAA_api",
+  "version": "1.0.0",
+  "description": "Node.js server that consumes XML data from NOAA's SOAP API",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "keywords": [
+    "SOAP",
+    "XML",
+    "NOA",
+    "API"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.18.0",
+    "express": "^4.16.4",
+    "express-xml-bodyparser": "^0.3.0"
+  }
+}
