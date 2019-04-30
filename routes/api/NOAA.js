@@ -5,8 +5,8 @@ const axios = require('axios');
 
 const latitude = 39.74;
 const longitude = -104.84;
-const startDate = 2019-04-28;
-const numDays = 4;
+const startDate = new Date(Date.now()).toLocaleDateString();
+const numDays = 5;
 const units = 'e';
 
 const soapURL = 'https://graphical.weather.gov/xml/SOAP_server/ndfdXMLserver.php';
